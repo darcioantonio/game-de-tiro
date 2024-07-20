@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo - Battle Royale</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div id="scoreboard" class="scoreboard">
+        <h2>Kill Rank</h2>
+        <ul id="playerScores"></ul>
+    </div>
+    <div class="progress-container">
+        <div class="progress-bar" id="monsterProgressBar">
+            <span id="monsterProgressText"></span>
+        </div>
+    </div>
+    <canvas id="gameCanvas" width="1000" height="1000"></canvas>
+    <div id="respawnCountdown" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 32px; color: white; display: none;"></div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        // Envie o nome do jogador ao servidor
+        const username = sessionStorage.getItem('username');
+        socket.emit('setUsername', { username });
+
+        socket.on('connect', () => {
+            socket.emit('setUsername', { username });
+        });
+
+        // Atualiza a barra de progresso dos monstros
+        socket.on('updateMonsterProgress', data => {
+            const progressBar = document.getElementById('monsterProgressBar');
+            progressBar.style.width = data.progress + '%';
+            const progressText = document.getElementById('monsterProgressText');
+            progressText.textContent = `${data.monstersLeft}/${data.monsterWaveSize}`;
+        });
+
+        // Muda o background do jogo e mostra o contador de 10 segundos
+        socket.on('startNextWave', data => {
+            document.body.style.backgroundImage = `url(${data.newBackground})`;
+            const countdownElement = document.getElementById('countdown');
+            let countdown = 10;
+            countdownElement.textContent = countdown;
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                countdownElement.textContent = countdown;
+                if (countdown === 0) {
+                    clearInterval(countdownInterval);
+                    countdownElement.textContent = '';
+                }
+            }, 1000);
+        });
+    </script>
+    <script src="js/game.js"></script> <!-- Certifique-se de carregar o game.js por último -->
+</body>
+</html>
